@@ -66,12 +66,15 @@ if [ "$USE_VENV" -eq 1 ]; then
   make_venv
 fi
 
-echo "==> Installing dependencies with $($PYTHON --version 2>&1)"
+echo "==> Installing dependencies with $("$PYTHON" --version 2>&1)"
 if ! pip_install; then
   # Most likely PEP 668 ("externally managed environment"). Retry in a venv.
   echo "==> Direct install failed; retrying inside a virtual environment"
   make_venv
   pip_install
+  # Anything still running later needs .venv activated first - say so once,
+  # here, instead of letting the commands below die on ModuleNotFoundError.
+  echo "(Note: the install landed in .venv, not in your system Python.)"
 fi
 
 echo "==> Verifying imports"
@@ -80,20 +83,25 @@ import sys
 
 import bs4
 import requests
+from PIL import Image
 
 print(f"    requests {requests.__version__}")
 print(f"    beautifulsoup4 {bs4.__version__}")
+print(f"    Pillow {Image.__version__}")
 print(f"    python {sys.version.split()[0]}")
 PY
-
-cat <<'EOF'
-
-Setup complete. Try it out:
-
-    python crawl_pic.py "red pandas" -n 5
-    python crawl_pic.py https://example.com/gallery -n 20
-EOF
 
 if [ "$USE_VENV" -eq 1 ]; then
   echo "(Activate the environment first with: source .venv/bin/activate)"
 fi
+
+# Same flag names crawl_pic.py actually accepts: --url / --keywords, one required.
+cat <<EOF
+
+Setup complete. Try it out:
+
+    $PYTHON crawl_pic.py --keywords "red pandas" -n 5
+    $PYTHON crawl_pic.py --url https://example.com/gallery -n 20
+
+Run '$PYTHON crawl_pic.py --help' for every option.
+EOF
